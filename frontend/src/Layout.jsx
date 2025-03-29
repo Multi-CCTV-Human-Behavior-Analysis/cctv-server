@@ -45,7 +45,7 @@ function Layout() {
                     </Toolbar>
                 </AppBar>
 
-                {/* 왼쪽 Drawer (사이드바) */}
+                {/* 왼쪽 Drawer (사이드바)*/}
                 <Drawer
                     variant="permanent"
                     sx={{
