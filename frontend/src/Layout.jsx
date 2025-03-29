@@ -88,7 +88,7 @@ function Layout() {
                 {/* 메인 컨텐츠 영역 */}
                 <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
                     <Toolbar />
-                    {/* 하위 라우트 컴포넌트가 표시되는 자리 */}
+                    {/* 하위 라우트 컴포넌트가 표시 자리 */}
                     <Outlet />
                 </Box>
             </Box>
