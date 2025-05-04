@@ -1,12 +1,10 @@
 package com.knu.capstone2.config;
 
-import com.knu.capstone2.websocket.VideoStreamWebSocketHandler;
-import org.springframework.context.annotation.Bean;
+import com.knu.capstone2.websocket.VideoWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
@@ -14,9 +12,9 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final VideoStreamWebSocketHandler webSocketHandler;
+    private final VideoWebSocketHandler webSocketHandler;
 
-    public WebSocketConfig(VideoStreamWebSocketHandler webSocketHandler) {
+    public WebSocketConfig(VideoWebSocketHandler webSocketHandler) {
         this.webSocketHandler = webSocketHandler;
     }
 
