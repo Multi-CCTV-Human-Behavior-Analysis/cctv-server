@@ -3,6 +3,8 @@ package com.knu.capstone2.controller;
 import com.knu.capstone2.dto.AddEventHistoryRequest;
 import com.knu.capstone2.service.ClipService;
 import com.knu.capstone2.service.EventService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -21,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/clip")
+@Tag(name = "Clip Management", description = "비디오 클립 관리 API")
 public class ClipController {
     private final ClipService clipService;
     private final EventService eventService;
@@ -28,6 +31,7 @@ public class ClipController {
     /**
         * eventHistory를 저장하면서, 해당 부분의 클립을 생성한다.
      */
+    @Operation(summary = "클립 저장", description = "이벤트 히스토리를 저장하고 해당 부분의 클립을 생성합니다.")
     @PostMapping("/save")
     public ResponseEntity<Map<String,String>> saveClip(@RequestBody AddEventHistoryRequest request
     ) {
@@ -51,6 +55,7 @@ public class ClipController {
     /**
         * 저장된 클립(mp4)을 스트리밍으로 내려준다.
      */
+    @Operation(summary = "클립 조회", description = "저장된 클립(mp4)을 스트리밍으로 조회합니다.")
     @GetMapping("/{id}")
     public ResponseEntity<StreamingResponseBody> getClip(@PathVariable Long id) throws Exception {
         // 1) 파일 경로 + 크기 가져오기
