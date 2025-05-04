@@ -38,6 +38,10 @@ dependencies {
 	// db
 	implementation 'com.h2database:h2'
 
+	// 클립용
+	implementation 'org.apache.httpcomponents.client5:httpclient5'
+	implementation("org.apache.httpcomponents.core5:httpcore5")
+
 }
 
 tasks.named('test') {

@@ -1,0 +1,71 @@
+package com.knu.capstone2.controller;
+
+import com.knu.capstone2.dto.AddEventHistoryRequest;
+import com.knu.capstone2.service.ClipService;
+import com.knu.capstone2.service.EventService;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/clip")
+public class ClipController {
+    private final ClipService clipService;
+    private final EventService eventService;
+
+    /**
+        * eventHistory를 저장하면서, 해당 부분의 클립을 생성한다.
+     */
+    @PostMapping("/save")
+    public ResponseEntity<Map<String,String>> saveClip(@RequestBody AddEventHistoryRequest request
+    ) {
+        try {
+            Long id = eventService.addEvent(request);
+            Path saved = clipService.saveClipToFile(id);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "클립 저장 완료",
+                    "clipId", String.valueOf(id),
+                    "path", saved.toString()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+
+    /**
+        * 저장된 클립(mp4)을 스트리밍으로 내려준다.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<StreamingResponseBody> getClip(@PathVariable Long id) throws Exception {
+        // 1) 파일 경로 + 크기 가져오기
+        Path clipPath = clipService.getClipPath(id);
+        long size = Files.size(clipPath);
+        String filename = clipPath.getFileName().toString();
+
+        // 2) StreamingResponseBody 얻기
+        StreamingResponseBody body = clipService.streamClip(id);
+
+        // 3) 헤더 붙여서 반환
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .contentType(MediaType.valueOf("video/mp4"))
+                .contentLength(size)
+                .body(body);
+    }
+}
