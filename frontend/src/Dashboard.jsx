@@ -1,110 +1,66 @@
-// src/DashboardPage.jsx
-import React from 'react';
-import { Box, Grid, Paper, Typography } from '@mui/material';
-import Layout from './Layout';
+import React, { useState } from 'react';
+import { Grid, Paper, Typography, Box } from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import Layout from '../Layout';
+import VideoStream from '../components/VideoStream';
 
 function DashboardPage() {
+    const [abnormalCount, setAbnormalCount] = useState(12);
+    const [cameraCount, setCameraCount] = useState(5);
+    const [alertCount, setAlertCount] = useState(3);
+    const [systemStatus, setSystemStatus] = useState('정상');
+
     return (
         <Layout>
-            {/* 메인 영역 */}
-            <Typography variant="h4" gutterBottom>
-                Dashboard
-            </Typography>
-            <Typography variant="subtitle1" gutterBottom>
-                test
-            </Typography>
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" gutterBottom>
+                    Dashboard
+                </Typography>
+                <Typography variant="subtitle1" gutterBottom>
+                    실시간 모니터링 현황
+                </Typography>
+            </Box>
 
-            {/* 상단 카드 섹션 (예: 시간, 서버상태 등) */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid container spacing={3}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Time</Typography>
-                        <Typography variant="body1">19:30</Typography>
+                    <Paper sx={{ p: 3, textAlign: 'center' }}>
+                        <WarningAmberIcon sx={{ fontSize: 60, color: 'error.main' }} />
+                        <Typography variant="h6">이상행동 건수</Typography>
+                        <Typography variant="h4">{abnormalCount}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Process</Typography>
-                        <Typography variant="body1">10d 3m</Typography>
+                    <Paper sx={{ p: 3, textAlign: 'center' }}>
+                        <VideocamIcon sx={{ fontSize: 60, color: 'primary.main' }} />
+                        <Typography variant="h6">감시 카메라 수</Typography>
+                        <Typography variant="h4">{cameraCount}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Status</Typography>
-                        <Typography variant="body1">Aktuell</Typography>
+                    <Paper sx={{ p: 3, textAlign: 'center' }}>
+                        <ReportProblemIcon sx={{ fontSize: 60, color: 'warning.main' }} />
+                        <Typography variant="h6">경고 알림</Typography>
+                        <Typography variant="h4">{alertCount}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Location</Typography>
-                        <Typography variant="body1">Berlin</Typography>
+                    <Paper sx={{ p: 3, textAlign: 'center' }}>
+                        <DashboardIcon sx={{ fontSize: 60, color: 'success.main' }} />
+                        <Typography variant="h6">시스템 상태</Typography>
+                        <Typography variant="h4">{systemStatus}</Typography>
                     </Paper>
                 </Grid>
             </Grid>
 
-            {/* 카메라 영상 섹션 */}
-            <Grid container spacing={2}>
-                {/* 카메라1 */}
-                <Grid item xs={12} md={6} lg={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Camera 1</Typography>
-                        <Box sx={{ mt: 2 }}>
-                            <video width="100%" controls autoPlay>
-                                <source src="http://localhost:8080/stream1" type="video/mp4" />
-                                Your browser does not support the video tag.
-                            </video>
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* 카메라2 */}
-                <Grid item xs={12} md={6} lg={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Keller Kamera 2</Typography>
-                        <Box sx={{ mt: 2 }}>
-                            <video width="100%" controls autoPlay>
-                                <source src="http://localhost:8080/stream2" type="video/mp4" />
-                                Your browser does not support the video tag.
-                            </video>
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* 카메라3 */}
-                <Grid item xs={12} md={6} lg={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Keller Kamera 3</Typography>
-                        <Box sx={{ mt: 2 }}>
-                            <video width="100%" controls autoPlay>
-                                <source src="http://localhost:8080/stream3" type="video/mp4" />
-                                Your browser does not support the video tag.
-                            </video>
-                        </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
-
-            {/* 하단에 CPU/메모리 사용량 등 추가 카드 배치 가능 */}
-            <Grid container spacing={2} sx={{ mt: 2 }}>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">CPU 사용량</Typography>
-                        <Typography variant="body1">29%</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">온도</Typography>
-                        <Typography variant="body1">55°C</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">스토리지</Typography>
-                        <Typography variant="body1">2.66 GB / 7.64 GB</Typography>
-                    </Paper>
-                </Grid>
-            </Grid>
+            <Box sx={{ mt: 4 }}>
+                <Typography variant="h5" gutterBottom>
+                    실시간 CCTV 영상
+                </Typography>
+                <VideoStream streamUrl="ws://localhost:8080/video-stream" />
+            </Box>
         </Layout>
     );
 }
