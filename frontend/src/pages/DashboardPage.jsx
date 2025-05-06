@@ -14,7 +14,7 @@ function DashboardPage() {
     const [systemStatus, setSystemStatus] = useState('정상');
 
     return (
-        <Layout>
+        <>
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h4" gutterBottom>
                     Dashboard
@@ -61,7 +61,7 @@ function DashboardPage() {
                 </Typography>
                 <VideoStream streamUrl="ws://localhost:8080/video-stream" />
             </Box>
-        </Layout>
+        </>
     );
 }
 

@@ -5,7 +5,7 @@ import VideoStream from '../components/VideoStream';
 
 function CamerasPage() {
     return (
-        <Layout>
+        <>
             <Typography variant="h4" gutterBottom>
                 Cameras
             </Typography>
@@ -21,7 +21,7 @@ function CamerasPage() {
                     <VideoStream streamUrl="ws://localhost:8080/video-stream" />
                 </Grid>
             </Grid>
-        </Layout>
+        </>
     );
 }
 

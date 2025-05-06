@@ -34,7 +34,7 @@ function HistoryPage() {
     };
 
     return (
-        <Layout>
+        <>
             <Typography variant="h4" gutterBottom>History</Typography>
 
             <Paper sx={{ p: 2, mb: 2 }}>
@@ -84,7 +84,7 @@ function HistoryPage() {
                     </video>
                 </Paper>
             )}
-        </Layout>
+        </>
     );
 }
 
