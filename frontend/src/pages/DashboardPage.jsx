@@ -55,7 +55,12 @@ function DashboardPage() {
                 </Grid>
             </Grid>
 
-            <Box sx={{ mt: 4 }}>
+            <Box sx={{ 
+                mt: 4,
+                width: '70%',     // 너비를 70%로 설정
+                maxWidth: '800px', // 최대 너비를 800px로 제한 (선택 사항)
+                mx: 'auto',       // 좌우 마진을 auto로 설정하여 가운데 정렬
+             }}>
                 <Typography variant="h5" gutterBottom>
                     실시간 CCTV 영상
                 </Typography>
