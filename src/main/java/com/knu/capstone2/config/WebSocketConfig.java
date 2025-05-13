@@ -21,7 +21,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(webSocketHandler, "/video-stream")
-                .setAllowedOrigins("*")
+//                .setAllowedOrigins("*")
+                .setAllowedOrigins("http://localhost:3000")
                 .setHandshakeHandler(new DefaultHandshakeHandler())
                 .addInterceptors(new HttpSessionHandshakeInterceptor());
     }
