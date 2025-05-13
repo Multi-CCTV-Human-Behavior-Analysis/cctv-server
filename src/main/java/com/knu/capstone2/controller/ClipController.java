@@ -3,6 +3,7 @@ package com.knu.capstone2.controller;
 import com.knu.capstone2.dto.AddEventHistoryRequest;
 import com.knu.capstone2.service.ClipService;
 import com.knu.capstone2.service.EventService;
+import com.knu.capstone2.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.nio.file.Files;
@@ -27,6 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 public class ClipController {
     private final ClipService clipService;
     private final EventService eventService;
+    private final NotificationService notificationService;
 
     /**
         * eventHistory를 저장하면서, 해당 부분의 클립을 생성한다.
@@ -38,6 +40,7 @@ public class ClipController {
         try {
             Long id = eventService.addEvent(request);
             Path saved = clipService.saveClipToFile(id);
+            notificationService.sendSystemNotification(id, request.timestamp(), request.detail());
 
             return ResponseEntity.ok(Map.of(
                     "message", "클립 저장 완료",
