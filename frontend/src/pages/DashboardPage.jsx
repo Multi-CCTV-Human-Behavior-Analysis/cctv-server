@@ -1,83 +1,134 @@
 // src/pages/DashboardPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Grid, Paper, Typography, Box } from '@mui/material';
+import { Grid, Paper, Typography, Box, Card, CardContent } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import VideoStream from '../components/VideoStream';
+import AlertNotification from '../components/AlertNotification';
+import EventHistory from '../components/EventHistory';
 
 function DashboardPage() {
-    // 집계 데이터 예시 (실제 API 연동 시 데이터 요청 추가)
-    const [abnormalCount, setAbnormalCount] = useState(12);
-    const [cameraCount, setCameraCount] = useState(5);
-    const [alertCount, setAlertCount] = useState(3);
-    const [systemStatus, setSystemStatus] = useState('정상');
+    const [stats, setStats] = useState({
+        abnormalCount: 0,
+        cameraCount: 0,
+        alertCount: 0,
+        systemStatus: '정상'
+    });
+
+    // 통계 데이터 가져오기
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch('http://localhost:8080/api/stats');
+                const data = await response.json();
+                setStats(data);
+            } catch (error) {
+                console.error('통계 데이터 로딩 실패:', error);
+            }
+        };
+
+        fetchStats();
+        const interval = setInterval(fetchStats, 30000); // 30초마다 갱신
+        return () => clearInterval(interval);
+    }, []);
 
     return (
-        <>
+        <Box sx={{ p: 3 }}>
+            {/* 헤더 */}
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h4" gutterBottom>
-                    Dashboard
+                    CCTV 모니터링 대시보드
                 </Typography>
-                <Typography variant="subtitle1" gutterBottom>
-                    실시간 모니터링 현황
+                <Typography variant="subtitle1" color="text.secondary">
+                    실시간 모니터링 및 이상행동 탐지 현황
                 </Typography>
             </Box>
 
-            {/* 집계 정보 카드 */}
-            <Grid container spacing={3}>
+            {/* 통계 카드 */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <WarningAmberIcon sx={{ fontSize: 60, color: 'error.main' }} />
-                        <Typography variant="h6" sx={{ mt: 1 }}>
-                            이상행동 건수
-                        </Typography>
-                        <Typography variant="h4" sx={{ mt: 1 }}>
-                            {abnormalCount}
-                        </Typography>
-                    </Paper>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <WarningAmberIcon sx={{ fontSize: 40, color: 'error.main', mr: 1 }} />
+                                <Typography variant="h6">이상행동</Typography>
+                            </Box>
+                            <Typography variant="h4">{stats.abnormalCount}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                오늘 발생한 이상행동 건수
+                            </Typography>
+                        </CardContent>
+                    </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <VideocamIcon sx={{ fontSize: 60, color: 'primary.main' }} />
-                        <Typography variant="h6" sx={{ mt: 1 }}>
-                            감시 카메라 수
-                        </Typography>
-                        <Typography variant="h4" sx={{ mt: 1 }}>
-                            {cameraCount}
-                        </Typography>
-                    </Paper>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <VideocamIcon sx={{ fontSize: 40, color: 'primary.main', mr: 1 }} />
+                                <Typography variant="h6">카메라</Typography>
+                            </Box>
+                            <Typography variant="h4">{stats.cameraCount}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                운영 중인 카메라 수
+                            </Typography>
+                        </CardContent>
+                    </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <ReportProblemIcon sx={{ fontSize: 60, color: 'warning.main' }} />
-                        <Typography variant="h6" sx={{ mt: 1 }}>
-                            경고 알림
-                        </Typography>
-                        <Typography variant="h4" sx={{ mt: 1 }}>
-                            {alertCount}
-                        </Typography>
-                    </Paper>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <ReportProblemIcon sx={{ fontSize: 40, color: 'warning.main', mr: 1 }} />
+                                <Typography variant="h6">경고</Typography>
+                            </Box>
+                            <Typography variant="h4">{stats.alertCount}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                미처리된 경고 알림
+                            </Typography>
+                        </CardContent>
+                    </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <DashboardIcon sx={{ fontSize: 60, color: 'success.main' }} />
-                        <Typography variant="h6" sx={{ mt: 1 }}>
-                            시스템 상태
-                        </Typography>
-                        <Typography variant="h4" sx={{ mt: 1 }}>
-                            {systemStatus}
-                        </Typography>
-                    </Paper>
+                    <Card>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <DashboardIcon sx={{ fontSize: 40, color: 'success.main', mr: 1 }} />
+                                <Typography variant="h6">시스템</Typography>
+                            </Box>
+                            <Typography variant="h4">{stats.systemStatus}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                현재 시스템 상태
+                            </Typography>
+                        </CardContent>
+                    </Card>
                 </Grid>
             </Grid>
 
-            {/* VideoStream 컴포넌트를 통한 실시간 CCTV 영상 */}
-            <Box sx={{ mt: 4 }}>
-                <VideoStream />
-            </Box>
-        </>
+            {/* 메인 콘텐츠 */}
+            <Grid container spacing={3}>
+                {/* 실시간 영상 */}
+                <Grid item xs={12} md={8}>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            실시간 CCTV 영상
+                        </Typography>
+                        <VideoStream />
+                    </Paper>
+                </Grid>
+
+                {/* 실시간 알림 */}
+                <Grid item xs={12} md={4}>
+                    <AlertNotification />
+                </Grid>
+
+                {/* 이벤트 이력 */}
+                <Grid item xs={12}>
+                    <EventHistory />
+                </Grid>
+            </Grid>
+        </Box>
     );
 }
 

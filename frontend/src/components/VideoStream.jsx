@@ -1,46 +1,171 @@
 // src/components/VideoStream.jsx
-import React, { useState, useEffect } from 'react';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
+import React, { useEffect, useRef, useState } from 'react';
+import { Box, Paper, Typography } from '@mui/material';
 
-function VideoStream() {
-    const [imageSrc, setImageSrc] = useState('');
+const VideoStream = () => {
+    const videoRef = useRef(null);
+    const mediaSourceRef = useRef(null);
+    const sourceBufferRef = useRef(null);
+    const wsRef = useRef(null);
+    const queueRef = useRef([]);
+    const isBufferUpdatingRef = useRef(false);
+    const [useLocalCamera, setUseLocalCamera] = useState(false);
 
     useEffect(() => {
-        // 백엔드에서 WebSocket 스트리밍 정보 받아오기
-        fetch('http://localhost:8080/api/stream/url')
-            .then(res => res.json())
-            .then(data => {
-                const { websocketUrl, topic } = data;
-                const socket = new SockJS(websocketUrl);
-                const client = new Client({
-                    webSocketFactory: () => socket,
-                    reconnectDelay: 5000,
-                    onConnect: () => {
-                        client.subscribe(topic, (message) => {
-                            // 메시지가 Base64 인코딩된 JPEG 문자열이라고 가정
-                            setImageSrc(`data:image/jpeg;base64,${message.body}`);
-                        });
-                    },
+        const initLocalCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: 1280,
+                        height: 720,
+                        frameRate: 30
+                    }
                 });
-                client.activate();
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+                console.log('로컬 카메라 스트림 시작됨');
+            } catch (err) {
+                console.error('로컬 카메라 접근 실패:', err);
+            }
+        };
 
-                // cleanup: 컴포넌트 unmount 시 deactivation
-                return () => client.deactivate();
-            })
-            .catch(err => console.error(err));
-    }, []);
+        const initWebSocket = () => {
+            console.log('WebSocket 연결 시도...');
+            wsRef.current = new WebSocket('ws://localhost:8080/ws/video');
+
+            wsRef.current.onopen = () => {
+                console.log('WebSocket 연결 성공!');
+                setUseLocalCamera(false);
+            };
+
+            wsRef.current.onmessage = (event) => {
+                if (event.data instanceof Blob) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const arrayBuffer = reader.result;
+                        if (!sourceBufferRef.current) {
+                            queueRef.current.push(arrayBuffer);
+                            return;
+                        }
+
+                        if (isBufferUpdatingRef.current) {
+                            queueRef.current.push(arrayBuffer);
+                            return;
+                        }
+
+                        try {
+                            isBufferUpdatingRef.current = true;
+                            sourceBufferRef.current.appendBuffer(arrayBuffer);
+                        } catch (e) {
+                            console.error('버퍼 추가 실패:', e);
+                            isBufferUpdatingRef.current = false;
+                        }
+                    };
+                    reader.readAsArrayBuffer(event.data);
+                }
+            };
+
+            wsRef.current.onclose = (event) => {
+                console.log('WebSocket 연결 종료:', event.code, event.reason);
+                setUseLocalCamera(true);
+                initLocalCamera();
+            };
+
+            wsRef.current.onerror = (error) => {
+                console.error('WebSocket 에러:', error);
+                setUseLocalCamera(true);
+                initLocalCamera();
+            };
+        };
+
+        const initMediaSource = () => {
+            if (!useLocalCamera && MediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
+                console.log('MediaSource 초기화 시작');
+                mediaSourceRef.current = new MediaSource();
+                videoRef.current.src = URL.createObjectURL(mediaSourceRef.current);
+
+                mediaSourceRef.current.addEventListener('sourceopen', () => {
+                    try {
+                        sourceBufferRef.current = mediaSourceRef.current.addSourceBuffer(
+                            'video/mp4; codecs="avc1.42E01E,mp4a.40.2"'
+                        );
+
+                        sourceBufferRef.current.addEventListener('updateend', () => {
+                            isBufferUpdatingRef.current = false;
+                            if (queueRef.current.length > 0) {
+                                const nextBuffer = queueRef.current.shift();
+                                try {
+                                    isBufferUpdatingRef.current = true;
+                                    sourceBufferRef.current.appendBuffer(nextBuffer);
+                                } catch (e) {
+                                    console.error('큐의 다음 버퍼 추가 실패:', e);
+                                    isBufferUpdatingRef.current = false;
+                                }
+                            }
+                        });
+
+                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                            wsRef.current.send('init');
+                        }
+                    } catch (e) {
+                        console.error('SourceBuffer 생성 실패:', e);
+                        setUseLocalCamera(true);
+                        initLocalCamera();
+                    }
+                });
+            }
+        };
+
+        if (!useLocalCamera) {
+            initMediaSource();
+            initWebSocket();
+        } else {
+            initLocalCamera();
+        }
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+            if (mediaSourceRef.current && mediaSourceRef.current.readyState === 'open') {
+                mediaSourceRef.current.endOfStream();
+            }
+            if (videoRef.current && videoRef.current.srcObject) {
+                const tracks = videoRef.current.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+        };
+    }, [useLocalCamera]);
 
     return (
-        <div>
-            <h2>실시간 CCTV 영상</h2>
-            {imageSrc ? (
-                <img src={imageSrc} alt="CCTV Stream" style={{ width: '100%' }} />
-            ) : (
-                <p>영상 로딩 중...</p>
-            )}
-        </div>
+        <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+                실시간 CCTV 영상 {useLocalCamera && '(로컬 카메라)'}
+            </Typography>
+            <Box
+                sx={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 'calc(100% - 40px)',
+                    bgcolor: 'black',
+                    overflow: 'hidden',
+                }}
+            >
+                <video
+                    ref={videoRef}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                />
+            </Box>
+        </Paper>
     );
-}
+};
 
 export default VideoStream;
