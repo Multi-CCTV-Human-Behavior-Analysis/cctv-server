@@ -33,11 +33,12 @@ const EventHistory = () => {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/events');
+                const response = await fetch('http://localhost:8080/api/history');
                 const data = await response.json();
-                setEvents(data);
+                setEvents(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('이벤트 데이터 로딩 실패:', error);
+                setEvents([]);
             }
         };
 

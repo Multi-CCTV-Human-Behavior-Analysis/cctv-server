@@ -17,6 +17,13 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.net.http.*;
+import java.net.URI;
+import java.nio.file.Files;
+import java.io.File;
+import java.io.OutputStream;
+import java.util.UUID;
 
 @Service
 public class SegmentRecordingService {
@@ -28,6 +35,9 @@ public class SegmentRecordingService {
 
     private Process ffmpegProcess;
 
+    @Autowired(required = false)
+    private AbnormalDetectService abnormalDetectService;
+
     public SegmentRecordingService(VideoStreamBroadcaster broadcaster) {
         this.broadcaster = broadcaster;
     }
@@ -35,6 +45,9 @@ public class SegmentRecordingService {
     private final Path segmentsDir = Path.of("segments");
     private final Duration keepDuration = Duration.ofHours(1);
     private final Random random = new Random();
+
+    // 클래스 필드에 추가
+    private int analyzeFrameCallCount = 0;
 
     /**
      * 애플리케이션 가동 후 한번만 호출되어,
@@ -48,10 +61,10 @@ public class SegmentRecordingService {
             System.out.println("웹캠 스트리밍 시작");
             List<String> cmd = List.of(
                     "ffmpeg",
-                    "-f", "avfoundation",  // macOS용 웹캠 캡처
+                    "-f", "dshow",  // Windows용 웹캡 캡처
                     "-framerate", "30",
                     "-video_size", "1280x720",
-                    "-i", "0:0",  // 첫 번째 웹캠 사용
+                    "-i", "video=Microsoft® LifeCam HD-3000",  // 첫 번째 웹캠 사용
                     "-c:v", "libx264",
                     "-preset", "ultrafast",
                     "-tune", "zerolatency",
@@ -198,5 +211,53 @@ public class SegmentRecordingService {
                 }
             }
         }
+    }
+
+    // 1초마다 프레임 캡처 및 Flask 서버로 전송
+    @Scheduled(fixedRate = 1000)
+    public void analyzeFramePeriodically() {
+        analyzeFrameCallCount++;
+        try {
+            System.out.println("[analyzeFramePeriodically] 1. ffmpeg 캡처 시작");
+            String frameFile = "frame.jpg";
+            ProcessBuilder pb = new ProcessBuilder(
+                "ffmpeg", "-y", "-f", "dshow", "-i", "video=Microsoft® LifeCam HD-3000", "-frames:v", "1", frameFile
+            );
+            Process process = pb.start();
+            process.waitFor();
+            System.out.println("[analyzeFramePeriodically] 2. ffmpeg 캡처 완료");
+
+            HttpClient client = HttpClient.newHttpClient();
+            String boundary = "---" + UUID.randomUUID();
+            HttpRequest.BodyPublisher body = ofMimeMultipartData(frameFile, boundary);
+            System.out.println("[analyzeFramePeriodically] 3. Flask 서버로 HTTP 요청 전송 시작");
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:5000/analyze"))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(body)
+                .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            String result = response.body();
+            System.out.println("[analyzeFramePeriodically] 4. Flask 응답 수신: " + result);
+        } catch (Exception e) {
+            System.out.println("[analyzeFramePeriodically] 예외 발생: " + e.getMessage());
+        }
+    }
+
+    // multipart/form-data 유틸 함수
+    private static HttpRequest.BodyPublisher ofMimeMultipartData(String filePath, String boundary) throws Exception {
+        var byteArrays = new java.util.ArrayList<byte[]>();
+        String LINE_FEED = "\r\n";
+        // 파일 파트
+        String partHeader = "--" + boundary + LINE_FEED +
+                "Content-Disposition: form-data; name=\"frame\"; filename=\"frame.jpg\"" + LINE_FEED +
+                "Content-Type: image/jpeg" + LINE_FEED + LINE_FEED;
+        byteArrays.add(partHeader.getBytes());
+        byteArrays.add(Files.readAllBytes(Path.of(filePath)));
+        byteArrays.add(LINE_FEED.getBytes());
+        // 종료 바운더리
+        String end = "--" + boundary + "--" + LINE_FEED;
+        byteArrays.add(end.getBytes());
+        return HttpRequest.BodyPublishers.ofByteArrays(byteArrays);
     }
 }
