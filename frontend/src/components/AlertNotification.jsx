@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, List, ListItem, ListItemText, ListItemIcon, Badge, IconButton } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Paper, Typography, List, ListItem, ListItemText, ListItemIcon, Badge } from '@mui/material';
 import { NotificationsActive, Warning, Error, Info } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { Client } from '@stomp/stompjs';
 
 const AlertNotification = () => {
     const [alerts, setAlerts] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const wsRef = useRef(null);
 
-    // 이벤트 데이터 가져오기
+    // 이벤트 데이터 가져오기 (초기 로딩)
     useEffect(() => {
         const fetchEvents = async () => {
             try {
                 const response = await fetch('http://localhost:8080/api/history');
                 const data = await response.json();
-                // 최신 이벤트를 알림으로 변환
                 const newAlerts = data.map(event => ({
                     id: event.id,
                     type: event.eventType,
@@ -28,14 +29,44 @@ const AlertNotification = () => {
                 console.error('이벤트 데이터 로딩 실패:', error);
             }
         };
-
-        // 초기 데이터 로드
         fetchEvents();
+    }, []);
 
-        // 30초마다 새로운 이벤트 확인
-        const interval = setInterval(fetchEvents, 30000);
-
-        return () => clearInterval(interval);
+    // WebSocket(STOMP) 실시간 알림 구독
+    useEffect(() => {
+        // SockJS + STOMP 사용 (서버에 맞게 경로 조정)
+        const SockJS = window.SockJS || require('sockjs-client');
+        const sock = new SockJS('http://localhost:8080/ws');
+        const stompClient = new Client({
+            brokerURL: 'ws://localhost:8080/ws',
+            connectHeaders: {},
+            heartbeatIncoming: 0,
+            heartbeatOutgoing: 20000,
+            transport: sock
+        });
+        wsRef.current = stompClient;
+        stompClient.onConnect = () => {
+            stompClient.subscribe('/topic/alerts', (msg) => {
+                if (msg.body) {
+                    const event = JSON.parse(msg.body);
+                    setAlerts(prev => [
+                        {
+                            id: Date.now(),
+                            type: event.type,
+                            message: `${event.type} 이벤트 발생 (확률: ${event.prob})`,
+                            timestamp: new Date(event.timestamp * 1000),
+                            read: false
+                        },
+                        ...prev
+                    ]);
+                    setUnreadCount(prev => prev + 1);
+                }
+            });
+        };
+        stompClient.activate();
+        return () => {
+            if (wsRef.current) stompClient.deactivate();
+        };
     }, []);
 
     // 알림 읽음 처리
@@ -54,6 +85,8 @@ const AlertNotification = () => {
                 return <Error color="error" />;
             case 'reverse_driving':
                 return <Warning color="warning" />;
+            case 'thief':
+                return <Error color="error" />;
             default:
                 return <Info color="info" />;
         }

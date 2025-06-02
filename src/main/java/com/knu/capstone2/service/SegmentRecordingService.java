@@ -214,50 +214,8 @@ public class SegmentRecordingService {
     }
 
     // 1초마다 프레임 캡처 및 Flask 서버로 전송
-    @Scheduled(fixedRate = 1000)
-    public void analyzeFramePeriodically() {
-        analyzeFrameCallCount++;
-        try {
-            System.out.println("[analyzeFramePeriodically] 1. ffmpeg 캡처 시작");
-            String frameFile = "frame.jpg";
-            ProcessBuilder pb = new ProcessBuilder(
-                "ffmpeg", "-y", "-f", "dshow", "-i", "video=Microsoft® LifeCam HD-3000", "-frames:v", "1", frameFile
-            );
-            Process process = pb.start();
-            process.waitFor();
-            System.out.println("[analyzeFramePeriodically] 2. ffmpeg 캡처 완료");
-
-            HttpClient client = HttpClient.newHttpClient();
-            String boundary = "---" + UUID.randomUUID();
-            HttpRequest.BodyPublisher body = ofMimeMultipartData(frameFile, boundary);
-            System.out.println("[analyzeFramePeriodically] 3. Flask 서버로 HTTP 요청 전송 시작");
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:5000/analyze"))
-                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .POST(body)
-                .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            String result = response.body();
-            System.out.println("[analyzeFramePeriodically] 4. Flask 응답 수신: " + result);
-        } catch (Exception e) {
-            System.out.println("[analyzeFramePeriodically] 예외 발생: " + e.getMessage());
-        }
-    }
-
-    // multipart/form-data 유틸 함수
-    private static HttpRequest.BodyPublisher ofMimeMultipartData(String filePath, String boundary) throws Exception {
-        var byteArrays = new java.util.ArrayList<byte[]>();
-        String LINE_FEED = "\r\n";
-        // 파일 파트
-        String partHeader = "--" + boundary + LINE_FEED +
-                "Content-Disposition: form-data; name=\"frame\"; filename=\"frame.jpg\"" + LINE_FEED +
-                "Content-Type: image/jpeg" + LINE_FEED + LINE_FEED;
-        byteArrays.add(partHeader.getBytes());
-        byteArrays.add(Files.readAllBytes(Path.of(filePath)));
-        byteArrays.add(LINE_FEED.getBytes());
-        // 종료 바운더리
-        String end = "--" + boundary + "--" + LINE_FEED;
-        byteArrays.add(end.getBytes());
-        return HttpRequest.BodyPublishers.ofByteArrays(byteArrays);
-    }
+    // @Scheduled(fixedRate = 1000)
+    // public void analyzeFramePeriodically() {
+    //     ... (기존 코드 전체 주석 처리 또는 삭제)
+    // }
 }

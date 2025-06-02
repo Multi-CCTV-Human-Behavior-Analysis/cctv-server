@@ -8,6 +8,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import VideoStream from '../components/VideoStream';
 import AlertNotification from '../components/AlertNotification';
 import EventHistory from '../components/EventHistory';
+import { CAMERAS } from '../constants/cameras';
 
 function DashboardPage() {
     const [stats, setStats] = useState({
@@ -114,7 +115,13 @@ function DashboardPage() {
                         <Typography variant="h6" gutterBottom>
                             실시간 CCTV 영상
                         </Typography>
-                        <VideoStream />
+                        <Grid container spacing={2}>
+                            {CAMERAS.map(cam => (
+                                <Grid item xs={12} md={6} key={cam.id}>
+                                    <VideoStream rtsp={cam.rtsp} name={cam.name} />
+                                </Grid>
+                            ))}
+                        </Grid>
                     </Paper>
                 </Grid>
 
