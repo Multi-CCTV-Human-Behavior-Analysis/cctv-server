@@ -24,12 +24,15 @@ CORS(app)
 mp_pose = mp.solutions.pose
 
 def send_event_to_java(event_data):
-    url = "http://localhost:8081/event"  # 자바 서버 주소
+    url = "http://localhost:8081/api/history/event"  # 자바 서버 주소 (엔드포인트 수정)
     try:
-        requests.post(url, json=event_data)
-        print(f"[flask_ai_server] 이벤트 전송: {event_data}")
+        response = requests.post(url, json=event_data)
+        if response.status_code == 200:
+            print(f"[flask_ai_server] 이벤트 전송 성공: {event_data}")
+        else:
+            print(f"[flask_ai_server] 이벤트 전송 실패: status={response.status_code}, body={response.text}")
     except Exception as e:
-        print("[flask_ai_server] 이벤트 전송 실패:", e)
+        print("[flask_ai_server] 이벤트 전송 예외:", e)
 
 # 모델 로드 (서버 시작 시 1회)
 print("[flask_ai_server] 모델 로드 시작")
@@ -54,6 +57,7 @@ def camera_loop():
     OPENPOSE_18_IDX = [
         0, 11, 13, 15, 12, 14, 16, 23, 25, 27, 24, 26, 28, 5, 2, 6, 3, 1
     ]
+    last_event_time = 0  # 마지막 이벤트 전송 시각
     with mp_pose.Pose(static_image_mode=False) as pose:
         while True:
             ret, frame = cap.read()
@@ -87,8 +91,11 @@ def camera_loop():
                     pred = prob.argmax(dim=1).item()
                     print(f"[flask_ai_server] 모델 추론 결과: class={class_names[pred]}, prob={prob[0, pred].item():.4f}")
                     if class_names[pred] == 'thief' and prob[0, pred].item() > 0.8:
-                        event = {"type": "thief", "prob": float(prob[0, pred].item()), "timestamp": time.time()}
-                        send_event_to_java(event)
+                        now = time.time()
+                        if now - last_event_time > 1.0:  # 1초에 한 번만 전송
+                            event = {"type": "thief", "prob": float(prob[0, pred].item()), "timestamp": now}
+                            send_event_to_java(event)
+                            last_event_time = now
                         cv2.putText(frame, "THIEF DETECTED!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,255), 3)
             mp.solutions.drawing_utils.draw_landmarks(
                 frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)

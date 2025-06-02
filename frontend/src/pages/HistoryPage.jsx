@@ -29,7 +29,7 @@ function HistoryPage() {
         }
 
         // 서버에 GET 요청
-        fetch(`http://localhost:8080/api/history?${params.toString()}`)
+        fetch(`http://localhost:8081/api/history?${params.toString()}`)
             .then(res => res.json())
             .then(data => setHistory(data))
             .catch(err => console.error(err));

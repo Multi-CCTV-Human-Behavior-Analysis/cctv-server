@@ -11,27 +11,19 @@ import EventHistory from '../components/EventHistory';
 import { CAMERAS } from '../constants/cameras';
 
 function DashboardPage() {
-    const [stats, setStats] = useState({
-        abnormalCount: 0,
-        cameraCount: 0,
-        alertCount: 0,
-        systemStatus: '정상'
-    });
+    const [abnormalCount, setAbnormalCount] = useState(0);
+    const [cameraCount, setCameraCount] = useState(CAMERAS.length);
 
     // 통계 데이터 가져오기
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await fetch('http://localhost:8080/api/stats');
-                const data = await response.json();
-                setStats(data);
-            } catch (error) {
-                console.error('통계 데이터 로딩 실패:', error);
-            }
+        const fetchStats = () => {
+            fetch('http://localhost:8081/api/history')
+                .then(res => res.json())
+                .then(data => setAbnormalCount(Array.isArray(data) ? data.length : 0))
+                .catch(() => setAbnormalCount(0));
         };
-
         fetchStats();
-        const interval = setInterval(fetchStats, 30000); // 30초마다 갱신
+        const interval = setInterval(fetchStats, 3000); // 3초마다 갱신
         return () => clearInterval(interval);
     }, []);
 
@@ -56,7 +48,7 @@ function DashboardPage() {
                                 <WarningAmberIcon sx={{ fontSize: 40, color: 'error.main', mr: 1 }} />
                                 <Typography variant="h6">이상행동</Typography>
                             </Box>
-                            <Typography variant="h4">{stats.abnormalCount}</Typography>
+                            <Typography variant="h4">{abnormalCount}</Typography>
                             <Typography variant="body2" color="text.secondary">
                                 오늘 발생한 이상행동 건수
                             </Typography>
@@ -70,7 +62,7 @@ function DashboardPage() {
                                 <VideocamIcon sx={{ fontSize: 40, color: 'primary.main', mr: 1 }} />
                                 <Typography variant="h6">카메라</Typography>
                             </Box>
-                            <Typography variant="h4">{stats.cameraCount}</Typography>
+                            <Typography variant="h4">{cameraCount}</Typography>
                             <Typography variant="body2" color="text.secondary">
                                 운영 중인 카메라 수
                             </Typography>
@@ -84,7 +76,7 @@ function DashboardPage() {
                                 <ReportProblemIcon sx={{ fontSize: 40, color: 'warning.main', mr: 1 }} />
                                 <Typography variant="h6">경고</Typography>
                             </Box>
-                            <Typography variant="h4">{stats.alertCount}</Typography>
+                            <Typography variant="h4">0</Typography>
                             <Typography variant="body2" color="text.secondary">
                                 미처리된 경고 알림
                             </Typography>
@@ -98,7 +90,7 @@ function DashboardPage() {
                                 <DashboardIcon sx={{ fontSize: 40, color: 'success.main', mr: 1 }} />
                                 <Typography variant="h6">시스템</Typography>
                             </Box>
-                            <Typography variant="h4">{stats.systemStatus}</Typography>
+                            <Typography variant="h4">정상</Typography>
                             <Typography variant="body2" color="text.secondary">
                                 현재 시스템 상태
                             </Typography>

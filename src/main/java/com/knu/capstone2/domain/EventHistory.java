@@ -34,9 +34,9 @@ public class EventHistory {
     private String cameraId;     // 어떤 CCTV에서 왔는지
 
     /** 클립 시작 시각 (절대 시각), timestamp 이전일 수 있음 */
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime clipStartTime;
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime clipEndTime;
 
     @Setter

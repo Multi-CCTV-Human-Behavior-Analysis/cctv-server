@@ -33,7 +33,7 @@ const EventHistory = () => {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/history');
+                const response = await fetch('http://localhost:8081/api/history');
                 const data = await response.json();
                 setEvents(Array.isArray(data) ? data : []);
             } catch (error) {
