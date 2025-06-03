@@ -67,21 +67,20 @@ const EventHistory = () => {
         const typeConfig = {
             fall: { label: '넘어짐', color: 'error' },
             reverse_driving: { label: '역주행', color: 'warning' },
-            default: { label: type, color: 'default' }
+            default: { label: type, color: 'primary' }
         };
-
         const config = typeConfig[type] || typeConfig.default;
-        return <Chip label={config.label} color={config.color} size="small" />;
+        return <Chip label={config.label} color={config.color} size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5 }} />;
     };
 
     return (
-        <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
+        <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 2px 16px 0 rgba(49,130,246,0.10)', background: '#fff', mt: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#222', mb: 2 }}>
                 이상행동 이력
             </Typography>
 
             {/* 필터 섹션 */}
-            <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid container spacing={2} sx={{ mb: 2, p: 2, borderRadius: 2, background: '#f5f7fa', boxShadow: '0 1px 6px 0 rgba(49,130,246,0.04)' }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <TextField
                         select
@@ -126,24 +125,22 @@ const EventHistory = () => {
             </Grid>
 
             {/* 이벤트 테이블 */}
-            <TableContainer>
-                <Table>
+            <TableContainer sx={{ borderRadius: 2, boxShadow: '0 1px 6px 0 rgba(49,130,246,0.04)' }}>
+                <Table sx={{ minWidth: 650 }}>
                     <TableHead>
-                        <TableRow>
-                            <TableCell>시간</TableCell>
-                            <TableCell>유형</TableCell>
-                            <TableCell>카메라</TableCell>
-                            <TableCell>상세내용</TableCell>
+                        <TableRow sx={{ background: '#f9fafb' }}>
+                            <TableCell sx={{ fontWeight: 700, color: '#222' }}>시간</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#222' }}>유형</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#222' }}>카메라</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#222' }}>상세내용</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {filteredEvents
                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                             .map((event) => (
-                                <TableRow key={event.id}>
-                                    <TableCell>
-                                        {format(new Date(event.timestamp), 'yyyy-MM-dd HH:mm:ss', { locale: ko })}
-                                    </TableCell>
+                                <TableRow key={event.id} hover sx={{ transition: 'background 0.2s', '&:hover': { background: '#e8f1fd' } }}>
+                                    <TableCell>{format(new Date(event.timestamp), 'yyyy-MM-dd HH:mm:ss', { locale: ko })}</TableCell>
                                     <TableCell>{getEventTypeChip(event.eventType)}</TableCell>
                                     <TableCell>{event.cameraId}</TableCell>
                                     <TableCell>{event.detail}</TableCell>

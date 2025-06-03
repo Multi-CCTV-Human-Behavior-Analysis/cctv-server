@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Paper, Typography, List, ListItem, ListItemText, ListItemIcon, Badge } from '@mui/material';
+import { Box, Paper, Typography, List, ListItem, ListItemText, ListItemIcon, Fade } from '@mui/material';
 import { NotificationsActive, Warning, Error, Info } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -64,7 +64,7 @@ const AlertNotification = () => {
         if (alert) {
             setHighlight(true);
             audioRef.current && audioRef.current.play();
-            const timer = setTimeout(() => setHighlight(false), 1000);
+            const timer = setTimeout(() => setHighlight(false), 1200);
             return () => clearTimeout(timer);
         }
     }, [alert]);
@@ -81,37 +81,39 @@ const AlertNotification = () => {
     }, []);
 
     const getAlertIcon = (type) => {
-        switch (type.toLowerCase()) {
+        switch (type?.toLowerCase()) {
             case 'fall':
-                return <Error color="error" />;
+                return <Error sx={{ color: '#ff5b56' }} />;
             case 'reverse_driving':
-                return <Warning color="warning" />;
+                return <Warning sx={{ color: '#ffb300' }} />;
             case 'thief':
-                return <Error color="error" />;
+                return <Error sx={{ color: '#3182f6' }} />;
             default:
-                return <Info color="info" />;
+                return <Info sx={{ color: '#3182f6' }} />;
         }
     };
 
     return (
-        <Paper sx={{ p: 2, maxHeight: 400, overflow: 'auto' }}>
+        <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 2px 16px 0 rgba(49,130,246,0.10)', background: '#fff', minHeight: 120 }}>
             <audio ref={audioRef} src="/alert.mp3" preload="auto" />
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <NotificationsActive />
-                <Typography variant="h6" sx={{ ml: 1 }}>
+                <NotificationsActive sx={{ color: '#3182f6' }} />
+                <Typography variant="h6" sx={{ ml: 1, fontWeight: 700, color: '#222' }}>
                     실시간 알림
                 </Typography>
             </Box>
             {alert ? (
-                <List>
-                    <ListItem sx={{ bgcolor: highlight ? 'yellow' : 'inherit', transition: 'background 0.5s' }}>
-                        <ListItemIcon>{getAlertIcon(alert.type)}</ListItemIcon>
-                        <ListItemText
-                            primary={alert.message}
-                            secondary={format(new Date(alert.timestamp), 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
-                        />
-                    </ListItem>
-                </List>
+                <Fade in={highlight} timeout={600}>
+                    <List>
+                        <ListItem sx={{ bgcolor: highlight ? '#e8f1fd' : 'inherit', borderRadius: 2, transition: 'background 0.5s' }}>
+                            <ListItemIcon>{getAlertIcon(alert.type)}</ListItemIcon>
+                            <ListItemText
+                                primary={<span style={{ fontWeight: 700, color: '#222' }}>{alert.message}</span>}
+                                secondary={format(new Date(alert.timestamp), 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
+                            />
+                        </ListItem>
+                    </List>
+                </Fade>
             ) : (
                 <Typography color="text.secondary">최근 알림이 없습니다.</Typography>
             )}

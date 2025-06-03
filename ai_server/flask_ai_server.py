@@ -91,9 +91,6 @@ def camera_loop():
             img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = pose.process(img_rgb)
             if not results.pose_landmarks:
-                cv2.imshow('RTSP Stream', frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
                 continue
             # mediapipe 33개 관절 중 openpose 18관절만 추출
             skeleton = []
@@ -123,13 +120,9 @@ def camera_loop():
                         cv2.putText(frame, "THIEF DETECTED!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,255), 3)
             mp.solutions.drawing_utils.draw_landmarks(
                 frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-            cv2.imshow('RTSP Stream', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-    cap.release()
+        cap.release()
     if out is not None:
         out.release()
-    cv2.destroyAllWindows()
 
 def gen_skeleton_frames(rtsp_url):
     cap = cv2.VideoCapture(rtsp_url)
