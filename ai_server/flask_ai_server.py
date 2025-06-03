@@ -16,6 +16,7 @@ import time
 import requests
 import threading
 from flask_cors import CORS
+import datetime
 
 RTSP_URL = "rtsp://admin:123456@172.30.1.1:554/stream2"
 
@@ -53,17 +54,40 @@ def camera_loop():
     skeleton_buffer = []
     SEQ_LEN = 30  # 시퀀스 길이
     V_MODEL = 18  # openpose 18관절
-    # mediapipe 33개 관절 중 openpose 18관절에 해당하는 인덱스 (예시)
     OPENPOSE_18_IDX = [
         0, 11, 13, 15, 12, 14, 16, 23, 25, 27, 24, 26, 28, 5, 2, 6, 3, 1
     ]
     last_event_time = 0  # 마지막 이벤트 전송 시각
+
+    # === 영상 저장 관련 변수 ===
+    save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/public/recordings'))
+    os.makedirs(save_dir, exist_ok=True)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = 30  # 카메라 fps에 맞게 조정
+    out = None
+    last_minute = None
+
     with mp_pose.Pose(static_image_mode=False) as pose:
         while True:
             ret, frame = cap.read()
             if not ret:
                 print("[flask_ai_server] 프레임 읽기 실패")
                 break
+
+            # === 1분 단위로 파일 저장 ===
+            now = datetime.datetime.now()
+            current_minute = now.strftime('%Y%m%d_%H%M')
+            if last_minute != current_minute:
+                if out is not None:
+                    out.release()
+                filename = f"stream_{current_minute}.mp4"
+                filepath = os.path.join(save_dir, filename)
+                h, w = frame.shape[:2]
+                out = cv2.VideoWriter(filepath, fourcc, fps, (w, h))
+                last_minute = current_minute
+            if out is not None:
+                out.write(frame)
+
             img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = pose.process(img_rgb)
             if not results.pose_landmarks:
@@ -86,16 +110,16 @@ def camera_loop():
                 seq = np.expand_dims(seq, -1)  # (1, 3, 30, 18, 1)
                 seq = torch.tensor(seq, dtype=torch.float32, device=device)
                 with torch.no_grad():
-                    out = model(seq)
-                    prob = F.softmax(out, dim=1)
+                    out_pred = model(seq)
+                    prob = F.softmax(out_pred, dim=1)
                     pred = prob.argmax(dim=1).item()
                     print(f"[flask_ai_server] 모델 추론 결과: class={class_names[pred]}, prob={prob[0, pred].item():.4f}")
                     if class_names[pred] == 'thief' and prob[0, pred].item() > 0.8:
-                        now = time.time()
-                        if now - last_event_time > 1.0:  # 1초에 한 번만 전송
-                            event = {"type": "thief", "prob": float(prob[0, pred].item()), "timestamp": now}
+                        now_event = time.time()
+                        if now_event - last_event_time > 1.0:  # 1초에 한 번만 전송
+                            event = {"type": "thief", "prob": float(prob[0, pred].item()), "timestamp": now_event}
                             send_event_to_java(event)
-                            last_event_time = now
+                            last_event_time = now_event
                         cv2.putText(frame, "THIEF DETECTED!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,255), 3)
             mp.solutions.drawing_utils.draw_landmarks(
                 frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
@@ -103,6 +127,8 @@ def camera_loop():
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     cap.release()
+    if out is not None:
+        out.release()
     cv2.destroyAllWindows()
 
 def gen_skeleton_frames(rtsp_url):
