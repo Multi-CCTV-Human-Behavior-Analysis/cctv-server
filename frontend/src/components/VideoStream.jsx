@@ -2,8 +2,8 @@
 import React from 'react';
 
 const VideoStream = ({ rtsp, name }) => {
-  // rtsp 값이 있으면 video_feed?rtsp=...로 요청, 없으면 기본 video_feed
-  const videoFeedUrl = rtsp
+  // rtsp 주소를 파이썬 서버로 쿼리로 전달
+  const src = rtsp
     ? `http://localhost:5000/video_feed?rtsp=${encodeURIComponent(rtsp)}`
     : `http://localhost:5000/video_feed`;
   return (
@@ -24,7 +24,7 @@ const VideoStream = ({ rtsp, name }) => {
         opacity: 0.95
       }}>{name}</div>
       <img
-        src={videoFeedUrl}
+        src={src}
         alt={name || 'CCTV Stream'}
         style={{ width: '100%', height: 320, objectFit: 'cover', display: 'block', borderRadius: 18, border: 'none' }}
       />

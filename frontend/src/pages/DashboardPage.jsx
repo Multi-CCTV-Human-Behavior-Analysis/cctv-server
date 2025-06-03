@@ -110,7 +110,7 @@ function DashboardPage() {
                         <Grid container spacing={2}>
                             {CAMERAS.map(cam => (
                                 <Grid item xs={12} md={6} key={cam.id}>
-                                    <VideoStream rtsp={cam.rtsp} name={cam.name} />
+                                    <VideoStream name={cam.name} />
                                 </Grid>
                             ))}
                         </Grid>

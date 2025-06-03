@@ -18,6 +18,7 @@ import threading
 from flask_cors import CORS
 import datetime
 
+RTSP_URL1 = "rtsp://admin:123456@172.30.1.1:554/stream1"
 RTSP_URL = "rtsp://admin:123456@172.30.1.1:554/stream2"
 
 app = Flask(__name__)
@@ -151,8 +152,8 @@ def health():
 
 @app.route('/video_feed')
 def video_feed():
-    rtsp_url = request.args.get('rtsp', RTSP_URL)
-    return Response(gen_skeleton_frames(rtsp_url),
+    # 항상 상수 RTSP_URL만 사용
+    return Response(gen_skeleton_frames(RTSP_URL1),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
