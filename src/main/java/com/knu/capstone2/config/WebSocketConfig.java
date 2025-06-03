@@ -20,7 +20,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(webSocketHandler, "/video-stream")
+        registry.addHandler(webSocketHandler, "/ws/video")
                 .setAllowedOrigins("*")
                 .setHandshakeHandler(new DefaultHandshakeHandler())
                 .addInterceptors(new HttpSessionHandshakeInterceptor());

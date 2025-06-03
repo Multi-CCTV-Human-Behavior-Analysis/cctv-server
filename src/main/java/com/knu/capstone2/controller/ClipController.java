@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import java.io.File;
 
 @RestController
 @RequiredArgsConstructor
@@ -72,5 +76,26 @@ public class ClipController {
                 .contentType(MediaType.valueOf("video/mp4"))
                 .contentLength(size)
                 .body(body);
+    }
+
+    /**
+     * recordings 폴더 내 mp4 파일 리스트 반환
+     */
+    @CrossOrigin
+    @GetMapping("/recordings/list")
+    public ResponseEntity<List<String>> getRecordingsList() {
+        try {
+            File dir = new File("../frontend/public/recordings");
+            if (!dir.exists() || !dir.isDirectory()) {
+                return ResponseEntity.ok(List.of());
+            }
+            List<String> files = java.util.Arrays.stream(dir.listFiles((d, name) -> name.endsWith(".mp4")))
+                    .map(File::getName)
+                    .sorted((a, b) -> b.compareTo(a)) // 최신순 정렬
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(files);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(List.of());
+        }
     }
 }

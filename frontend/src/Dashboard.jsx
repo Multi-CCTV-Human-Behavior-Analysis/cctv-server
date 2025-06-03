@@ -63,7 +63,7 @@ function DashboardPage() {
                         <Typography variant="h6">Keller Kamera 2</Typography>
                         <Box sx={{ mt: 2 }}>
                             <video width="100%" controls autoPlay>
-                                <source src="http://localhost:8080/stream2" type="video/mp4" />
+                                <source src="http://localhost:8080/stream1" type="video/mp4" />
                                 Your browser does not support the video tag.
                             </video>
                         </Box>

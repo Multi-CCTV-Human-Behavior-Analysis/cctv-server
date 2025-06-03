@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import CamerasPage from './pages/CamerasPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
+import RecordingsPage from './pages/RecordingsPage';
 
 function App() {
     return (
@@ -16,6 +17,7 @@ function App() {
                     <Route path="cameras" element={<CamerasPage />} />
                     <Route path="history" element={<HistoryPage />} />
                     <Route path="settings" element={<SettingsPage />} />
+                    <Route path="recordings" element={<RecordingsPage />} />
                 </Route>
             </Routes>
         </Router>
