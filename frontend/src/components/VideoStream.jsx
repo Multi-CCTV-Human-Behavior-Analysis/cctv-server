@@ -2,6 +2,10 @@
 import React from 'react';
 
 const VideoStream = ({ rtsp, name }) => {
+  // rtsp 값이 있으면 video_feed?rtsp=...로 요청, 없으면 기본 video_feed
+  const videoFeedUrl = rtsp
+    ? `http://localhost:5000/video_feed?rtsp=${encodeURIComponent(rtsp)}`
+    : `http://localhost:5000/video_feed`;
   return (
     <div style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', boxShadow: '0 2px 16px 0 rgba(49,130,246,0.10)', border: '1.5px solid #e5e8eb', background: '#fff' }}>
       <div style={{
@@ -20,7 +24,7 @@ const VideoStream = ({ rtsp, name }) => {
         opacity: 0.95
       }}>{name}</div>
       <img
-        src={`http://localhost:5000/video_feed`}
+        src={videoFeedUrl}
         alt={name || 'CCTV Stream'}
         style={{ width: '100%', height: 320, objectFit: 'cover', display: 'block', borderRadius: 18, border: 'none' }}
       />
