@@ -62,7 +62,22 @@ function RecordingsPage() {
                             <CloseIcon />
                         </IconButton>
                         {selected && (
-                            <video src={`/recordings/${selected}`} controls autoPlay style={{ width: '100%', borderRadius: 8, background: '#000' }} />
+                            <Box sx={{ position: 'relative' }}>
+                                <video 
+                                    src={`/recordings/${selected}`}
+                                    controls 
+                                    autoPlay 
+                                    style={{ width: '100%', borderRadius: 8, background: '#000' }}
+                                    onError={e => {
+                                        e.target.style.display = 'none';
+                                        const msg = document.getElementById('video-error-msg');
+                                        if (msg) msg.style.display = 'block';
+                                    }}
+                                />
+                                <Typography id="video-error-msg" sx={{ display: 'none', color: '#fff', textAlign: 'center', mt: 4, fontWeight: 700, fontSize: 20, position: 'absolute', top: '40%', left: 0, right: 0 }}>
+                                    영상을 불러올 수 없습니다. 파일이 없거나 지원하지 않는 형식입니다.
+                                </Typography>
+                            </Box>
                         )}
                     </Box>
                 </DialogContent>
