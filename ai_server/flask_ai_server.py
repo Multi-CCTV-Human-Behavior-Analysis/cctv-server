@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 print("[flask_ai_server] sys.path 설정 완료")
 
-from flask import Flask, jsonify, Response, request
+from flask import Flask, jsonify, Response, request, send_from_directory
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -17,6 +17,7 @@ import requests
 import threading
 from flask_cors import CORS
 import datetime
+import json
 
 RTSP_URL1 = "rtsp://admin:123456@172.30.1.1:554/stream1"
 RTSP_URL = "rtsp://admin:123456@172.30.1.1:554/stream2"
@@ -46,6 +47,35 @@ model.eval().to(device)
 class_names = ['normal', 'thief']
 print("[flask_ai_server] 모델 로드 완료")
 
+def update_recordings_json(new_filename):
+    json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/public/recordings/recordings.json'))
+    try:
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if new_filename not in data:
+                data.append(new_filename)
+        else:
+            data = [new_filename]
+        # 최신순 정렬(옵션)
+        data = sorted(data, reverse=True)
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print("[flask_ai_server] recordings.json 업데이트 실패:", e)
+
+def sync_recordings_json():
+    recordings_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/public/recordings'))
+    json_path = os.path.join(recordings_dir, 'recordings.json')
+    try:
+        files = [f for f in os.listdir(recordings_dir) if f.endswith('.mp4')]
+        files = sorted(files, reverse=True)
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(files, f, ensure_ascii=False, indent=2)
+        print(f"[flask_ai_server] recordings.json 동기화 완료: {len(files)}개 파일")
+    except Exception as e:
+        print("[flask_ai_server] recordings.json 동기화 실패:", e)
+
 def camera_loop():
     cap = cv2.VideoCapture(RTSP_URL)
     if not cap.isOpened():
@@ -63,7 +93,7 @@ def camera_loop():
     # === 영상 저장 관련 변수 ===
     save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/public/recordings'))
     os.makedirs(save_dir, exist_ok=True)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
     fps = 30  # 카메라 fps에 맞게 조정
     out = None
     last_minute = None
@@ -86,6 +116,8 @@ def camera_loop():
                 h, w = frame.shape[:2]
                 out = cv2.VideoWriter(filepath, fourcc, fps, (w, h))
                 last_minute = current_minute
+                # recordings.json에 파일명 추가
+                update_recordings_json(filename)
             if out is not None:
                 out.write(frame)
 
@@ -158,6 +190,7 @@ def video_feed():
 
 if __name__ == '__main__':
     print("[flask_ai_server] 서버 실행 시작")
+    sync_recordings_json()  # recordings.json 동기화
     t = threading.Thread(target=camera_loop, daemon=True)
     t.start()
     app.run(host='0.0.0.0', port=5000, debug=True) 

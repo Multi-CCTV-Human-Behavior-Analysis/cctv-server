@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import java.io.File;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequiredArgsConstructor
@@ -96,6 +97,20 @@ public class ClipController {
             return ResponseEntity.ok(files);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(List.of());
+        }
+    }
+
+    /**
+     * recordings 폴더 내 mp4 파일 삭제 및 recordings.json 갱신
+     */
+    @CrossOrigin
+    @DeleteMapping("/recordings/{filename}")
+    public ResponseEntity<?> deleteRecording(@PathVariable String filename) {
+        try {
+            clipService.deleteRecordingAndUpdateJson(filename);
+            return ResponseEntity.ok(Map.of("success", true, "deleted", filename));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("success", false, "error", e.getMessage()));
         }
     }
 }

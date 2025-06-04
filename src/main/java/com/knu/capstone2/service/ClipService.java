@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ClipService {
@@ -162,5 +163,27 @@ public class ClipService {
                 in.transferTo(out);
             }
         };
+    }
+
+    /**
+     * recordings 폴더에서 파일 삭제 및 recordings.json 갱신
+     */
+    public void deleteRecordingAndUpdateJson(String filename) throws IOException {
+        Path recordingsDir = Paths.get("../frontend/public/recordings").toAbsolutePath().normalize();
+        Path filePath = recordingsDir.resolve(filename);
+        Path jsonPath = recordingsDir.resolve("recordings.json");
+        // 파일 삭제
+        if (Files.exists(filePath)) {
+            Files.delete(filePath);
+        }
+        // recordings.json 갱신
+        if (Files.exists(jsonPath)) {
+            ObjectMapper mapper = new ObjectMapper();
+            List<String> files = mapper.readValue(jsonPath.toFile(), List.class);
+            files.removeIf(f -> f.trim().equals(filename));
+            // 최신순 정렬
+            files.sort((a, b) -> b.compareTo(a));
+            mapper.writerWithDefaultPrettyPrinter().writeValue(jsonPath.toFile(), files);
+        }
     }
 }
