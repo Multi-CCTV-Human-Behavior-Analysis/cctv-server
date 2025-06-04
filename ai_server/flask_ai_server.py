@@ -44,7 +44,7 @@ model = Model(in_channels=3, num_class=2, edge_importance_weighting=True,
               graph_args={'layout': 'openpose', 'strategy': 'uniform'})
 model.load_state_dict(torch.load('./epoch200_model.pt', map_location=device))
 model.eval().to(device)
-class_names = ['normal', 'FALL']
+class_names = ['normal', 'fall']
 print("[flask_ai_server] 모델 로드 완료")
 
 def update_recordings_json(new_filename):
