@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardMedia, Dialog, DialogContent, IconButton, Pagination, TextField, Stack, Button, Checkbox, FormControlLabel, CircularProgress } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, CardMedia, Dialog, DialogContent, IconButton, Pagination, TextField, Stack, Button, Checkbox, FormControlLabel, CircularProgress, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -10,7 +10,8 @@ function RecordingsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
-    const itemsPerPage = 12;
+    const [itemsPerPage, setItemsPerPage] = useState(12);
+    const itemsPerPageOptions = [12, 24, 48, 100, 200];
     const [search, setSearch] = useState("");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
@@ -92,27 +93,37 @@ function RecordingsPage() {
         if (selectedVideos.length === 0) return;
         if (!window.confirm(`정말 ${selectedVideos.length}개의 영상을 삭제하시겠습니까?`)) return;
         setDeleting(true);
-        let allSuccess = true;
-        for (const video of selectedVideos) {
+        let deletedList = [];
+        let failedList = [];
+        // 동기적으로 하나씩 처리
+        for (let i = 0; i < selectedVideos.length; i++) {
+            const video = selectedVideos[i];
             try {
                 const res = await fetch(`/api/clip/recordings/${video}`, { method: 'DELETE' });
                 const data = await res.json();
                 console.log('삭제 응답:', video, data);
-                if (!data.success) {
-                    allSuccess = false;
-                    alert(`삭제 실패: ${video}\n사유: ${data.error || '알 수 없음'}`);
+                if (data.success) {
+                    deletedList.push(video);
+                } else {
+                    failedList.push(video);
+                    console.warn(`삭제 실패: ${video}\n사유: ${data.error || '알 수 없음'}`);
                 }
                 await new Promise(r => setTimeout(r, 150));
             } catch (e) {
-                allSuccess = false;
-                alert(`삭제 요청 중 오류 발생: ${video}\n${e}`);
+                failedList.push(video);
+                console.warn(`삭제 요청 중 오류 발생: ${video}\n${e}`);
             }
         }
         setDeleting(false);
-        if (allSuccess) {
-            alert('선택한 영상이 모두 삭제되었습니다.');
+        let msg = '';
+        if (deletedList.length > 0) {
+            msg += `삭제 성공: ${deletedList.join(', ')}\n`;
         }
-        setVideos(prev => prev.filter(v => !selectedVideos.includes(v)));
+        if (failedList.length > 0) {
+            msg += `삭제 실패: ${failedList.join(', ')}\n`;
+        }
+        if (msg) alert(msg.trim());
+        setVideos(prev => prev.filter(v => !deletedList.includes(v)));
         setSelectedVideos([]);
     };
 
@@ -234,6 +245,26 @@ function RecordingsPage() {
                     <Typography>삭제 중입니다...</Typography>
                 </DialogContent>
             </Dialog>
+            
+            {/* 페이지네이션 개수 선택 */}
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel id="items-per-page-label">페이지당 개수</InputLabel>
+                    <Select
+                        labelId="items-per-page-label"
+                        value={itemsPerPage}
+                        label="페이지당 개수"
+                        onChange={e => setItemsPerPage(Number(e.target.value))}
+                    >
+                        {itemsPerPageOptions.map(opt => (
+                            <MenuItem key={opt} value={opt}>{opt}개</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary">
+                    (최대 200개까지 표시)
+                </Typography>
+            </Stack>
             
             <Grid container spacing={3}>
                 {Array.isArray(pagedVideos) && pagedVideos.length === 0 && (
