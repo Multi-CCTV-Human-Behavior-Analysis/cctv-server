@@ -113,4 +113,12 @@ public class ClipController {
             return ResponseEntity.status(500).body(Map.of("success", false, "error", e.getMessage()));
         }
     }
+
+    /**
+     * 시스템 헬스 체크
+     */
+    @GetMapping("/health")
+    public Map<String, String> health() {
+        return Map.of("status", "ok");
+    }
 }

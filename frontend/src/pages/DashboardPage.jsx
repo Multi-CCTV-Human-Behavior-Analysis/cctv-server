@@ -1,10 +1,12 @@
 // src/pages/DashboardPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Grid, Paper, Typography, Box, Card, CardContent } from '@mui/material';
+import { Grid, Paper, Typography, Box, Card, CardContent, CircularProgress } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import VideoStream from '../components/VideoStream';
 import AlertNotification from '../components/AlertNotification';
 import EventHistory from '../components/EventHistory';
@@ -13,6 +15,7 @@ import { CAMERAS } from '../constants/cameras';
 function DashboardPage() {
     const [abnormalCount, setAbnormalCount] = useState(0);
     const [cameraCount, setCameraCount] = useState(CAMERAS.length);
+    const [aiStatus, setAiStatus] = useState('loading');
 
     // 통계 데이터 가져오기
     useEffect(() => {
@@ -24,6 +27,22 @@ function DashboardPage() {
         };
         fetchStats();
         const interval = setInterval(fetchStats, 3000); // 3초마다 갱신
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            // AI 서버(파이썬)
+            try {
+                const res = await fetch('http://localhost:5000/health', { method: 'GET' });
+                const data = await res.json();
+                setAiStatus(data.status === 'ok' ? 'ok' : 'fail');
+            } catch {
+                setAiStatus('fail');
+            }
+        };
+        checkStatus();
+        const interval = setInterval(checkStatus, 10000); // 10초마다 체크
         return () => clearInterval(interval);
     }, []);
 
@@ -94,6 +113,13 @@ function DashboardPage() {
                             <Typography variant="body2" color="text.secondary">
                                 현재 시스템 상태
                             </Typography>
+                            {/* 서버별 상태 표시 */}
+                            <Box sx={{ mt: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                    {aiStatus === 'ok' ? <CheckCircleIcon color="success" sx={{ mr: 1 }} /> : aiStatus === 'fail' ? <ErrorIcon color="error" sx={{ mr: 1 }} /> : <CircularProgress size={18} sx={{ mr: 1 }} />}
+                                    <Typography variant="body2">AI 서버(5000): {aiStatus === 'ok' ? '정상' : aiStatus === 'fail' ? '오류' : '확인 중'}</Typography>
+                                </Box>
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
