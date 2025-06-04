@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardMedia, Dialog, DialogContent, IconButton, Pagination, TextField, Stack, Button, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, CardMedia, Dialog, DialogContent, IconButton, Pagination, TextField, Stack, Button, Checkbox, FormControlLabel, CircularProgress } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -17,6 +17,7 @@ function RecordingsPage() {
     const [timeFrom, setTimeFrom] = useState("");
     const [timeTo, setTimeTo] = useState("");
     const [selectedVideos, setSelectedVideos] = useState([]);
+    const [deleting, setDeleting] = useState(false);
     const filteredVideos = videos.filter(v => v.toLowerCase().includes(search.toLowerCase()) && isInDateTimeRange(v));
     const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
     const pagedVideos = filteredVideos.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -90,15 +91,27 @@ function RecordingsPage() {
     const handleDeleteSelected = async () => {
         if (selectedVideos.length === 0) return;
         if (!window.confirm(`정말 ${selectedVideos.length}개의 영상을 삭제하시겠습니까?`)) return;
-        // 실제 파일 삭제 요청 (백엔드 API 필요)
+        setDeleting(true);
+        let allSuccess = true;
         for (const video of selectedVideos) {
             try {
-                await fetch(`/api/clip/recordings/${video}`, { method: 'DELETE' });
+                const res = await fetch(`/api/clip/recordings/${video}`, { method: 'DELETE' });
+                const data = await res.json();
+                console.log('삭제 응답:', video, data);
+                if (!data.success) {
+                    allSuccess = false;
+                    alert(`삭제 실패: ${video}\n사유: ${data.error || '알 수 없음'}`);
+                }
+                await new Promise(r => setTimeout(r, 150));
             } catch (e) {
-                // 실패해도 계속 진행
+                allSuccess = false;
+                alert(`삭제 요청 중 오류 발생: ${video}\n${e}`);
             }
         }
-        // recordings.json 갱신 (프론트엔드에서만 반영, 실제로는 백엔드에서 관리 필요)
+        setDeleting(false);
+        if (allSuccess) {
+            alert('선택한 영상이 모두 삭제되었습니다.');
+        }
         setVideos(prev => prev.filter(v => !selectedVideos.includes(v)));
         setSelectedVideos([]);
     };
@@ -214,6 +227,14 @@ function RecordingsPage() {
                 </Typography>
             )}
             
+            {/* 삭제 중 다이얼로그 */}
+            <Dialog open={deleting} PaperProps={{ sx: { borderRadius: 3 } }}>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+                    <CircularProgress sx={{ mb: 2 }} />
+                    <Typography>삭제 중입니다...</Typography>
+                </DialogContent>
+            </Dialog>
+            
             <Grid container spacing={3}>
                 {Array.isArray(pagedVideos) && pagedVideos.length === 0 && (
                     <Grid item xs={12}>
@@ -326,3 +347,4 @@ function RecordingsPage() {
 }
 
 export default RecordingsPage;
+

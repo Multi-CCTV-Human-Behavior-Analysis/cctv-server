@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
 
 @Service
 public class ClipService {
@@ -169,21 +170,29 @@ public class ClipService {
      * recordings 폴더에서 파일 삭제 및 recordings.json 갱신
      */
     public void deleteRecordingAndUpdateJson(String filename) throws IOException {
-        Path recordingsDir = Paths.get("../frontend/public/recordings").toAbsolutePath().normalize();
+        Path recordingsDir = Paths.get(System.getProperty("user.dir"), "frontend", "public", "recordings").toAbsolutePath().normalize();
         Path filePath = recordingsDir.resolve(filename);
         Path jsonPath = recordingsDir.resolve("recordings.json");
-        // 파일 삭제
-        if (Files.exists(filePath)) {
-            Files.delete(filePath);
+        File file = filePath.toFile();
+        System.out.println("[DELETE] filePath: " + filePath.toAbsolutePath());
+        System.out.println("[DELETE] file.exists(): " + file.exists());
+        System.out.println("[DELETE] file.canWrite(): " + file.canWrite());
+        System.out.println("[DELETE] file.isFile(): " + file.isFile());
+        // 파일 삭제 (File.delete()만 사용)
+        if (file.exists()) {
+            boolean fileDeleted = file.delete();
+            System.out.println("[DELETE] file.delete() 결과: " + fileDeleted);
+        } else {
+            System.out.println("[DELETE] 파일이 존재하지 않음: " + filePath.toAbsolutePath());
         }
-        // recordings.json 갱신
+        // recordings.json 갱신 (기존 코드 유지)
         if (Files.exists(jsonPath)) {
             ObjectMapper mapper = new ObjectMapper();
             List<String> files = mapper.readValue(jsonPath.toFile(), List.class);
             files.removeIf(f -> f.trim().equals(filename));
-            // 최신순 정렬
             files.sort((a, b) -> b.compareTo(a));
             mapper.writerWithDefaultPrettyPrinter().writeValue(jsonPath.toFile(), files);
+            System.out.println("[DELETE] recordings.json 갱신 완료");
         }
     }
 }
