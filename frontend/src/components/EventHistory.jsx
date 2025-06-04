@@ -47,7 +47,9 @@ const EventHistory = () => {
 
     // 필터링된 이벤트 목록
     const filteredEvents = events.filter(event => {
-        if (filter.type !== 'all' && event.eventType !== filter.type) return false;
+        const type = (event.eventType || '').toLowerCase();
+        const filterType = (filter.type || '').toLowerCase();
+        if (filterType !== 'all' && filterType !== '' && type !== filterType) return false;
         if (filter.startDate && new Date(event.timestamp) < new Date(filter.startDate)) return false;
         if (filter.endDate && new Date(event.timestamp) > new Date(filter.endDate)) return false;
         if (filter.cameraId && event.cameraId !== filter.cameraId) return false;
@@ -64,13 +66,10 @@ const EventHistory = () => {
     };
 
     const getEventTypeChip = (type) => {
-        const typeConfig = {
-            fall: { label: '넘어짐', color: 'error' },
-            reverse_driving: { label: '역주행', color: 'warning' },
-            default: { label: type, color: 'primary' }
-        };
-        const config = typeConfig[type] || typeConfig.default;
-        return <Chip label={config.label} color={config.color} size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5 }} />;
+        const t = (type || '').toLowerCase();
+        if (t === 'fall' || t === '넘어짐' || t === 'FALL') return <Chip label="넘어짐" color="error" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5 }} />;
+        if (t === 'reverse_driving' || t === '역주행') return <Chip label="역주행" color="warning" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5 }} />;
+        return <Chip label={type} color="primary" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5 }} />;
     };
 
     return (

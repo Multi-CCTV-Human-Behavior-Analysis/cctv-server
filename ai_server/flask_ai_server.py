@@ -44,7 +44,7 @@ model = Model(in_channels=3, num_class=2, edge_importance_weighting=True,
               graph_args={'layout': 'openpose', 'strategy': 'uniform'})
 model.load_state_dict(torch.load('./epoch200_model.pt', map_location=device))
 model.eval().to(device)
-class_names = ['normal', 'thief']
+class_names = ['normal', 'FALL']
 print("[flask_ai_server] 모델 로드 완료")
 
 def update_recordings_json(new_filename):
@@ -144,13 +144,13 @@ def camera_loop():
                     prob = F.softmax(out_pred, dim=1)
                     pred = prob.argmax(dim=1).item()
                     print(f"[flask_ai_server] 모델 추론 결과: class={class_names[pred]}, prob={prob[0, pred].item():.4f}")
-                    if class_names[pred] == 'thief' and prob[0, pred].item() > 0.8:
+                    if class_names[pred] == 'FALL' and prob[0, pred].item() > 0.8:
                         now_event = time.time()
                         if now_event - last_event_time > 1.0:  # 1초에 한 번만 전송
-                            event = {"type": "thief", "prob": float(prob[0, pred].item()), "timestamp": now_event}
+                            event = {"type": "FALL", "prob": float(prob[0, pred].item()), "timestamp": now_event}
                             send_event_to_java(event)
                             last_event_time = now_event
-                        cv2.putText(frame, "THIEF DETECTED!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,255), 3)
+                        cv2.putText(frame, "FALL DETECTED!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,255), 3)
             mp.solutions.drawing_utils.draw_landmarks(
                 frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
         cap.release()

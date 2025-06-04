@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Paper, Typography, List, ListItem, ListItemText, ListItemIcon, Fade } from '@mui/material';
+import { Box, Paper, Typography, List, ListItem, ListItemText, ListItemIcon, Fade, Chip } from '@mui/material';
 import { NotificationsActive, Warning, Error, Info } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -93,6 +93,32 @@ const AlertNotification = () => {
         }
     };
 
+    const getTypeChip = (type) => {
+        switch (type?.toLowerCase()) {
+            case 'fall':
+                return <Chip label="넘어짐" color="error" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5, mr: 1 }} />;
+            case 'reverse_driving':
+                return <Chip label="역주행" color="warning" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5, mr: 1 }} />;
+            case 'thief':
+                return <Chip label="침입" color="secondary" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5, mr: 1 }} />;
+            default:
+                return <Chip label={type} color="primary" size="small" sx={{ fontWeight: 700, fontSize: 14, px: 1.5, mr: 1 }} />;
+        }
+    };
+
+    // 확률(%) 추출 함수
+    const getProbPercent = (prob) => {
+        if (typeof prob === 'number') {
+            return `${Math.round(prob * 100)}%`;
+        }
+        // 메시지에 '확률:'이 포함된 경우 추출
+        if (typeof prob === 'string' && prob.includes('확률:')) {
+            const match = prob.match(/확률: ?([0-9.]+)/);
+            if (match) return `${Math.round(Number(match[1]) * 100)}%`;
+        }
+        return null;
+    };
+
     return (
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 2px 16px 0 rgba(49,130,246,0.10)', background: '#fff', minHeight: 120 }}>
             <audio ref={audioRef} src="/alert.mp3" preload="auto" />
@@ -108,7 +134,17 @@ const AlertNotification = () => {
                         <ListItem sx={{ bgcolor: highlight ? '#e8f1fd' : 'inherit', borderRadius: 2, transition: 'background 0.5s' }}>
                             <ListItemIcon>{getAlertIcon(alert.type)}</ListItemIcon>
                             <ListItemText
-                                primary={<span style={{ fontWeight: 700, color: '#222' }}>{alert.message}</span>}
+                                primary={
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        {getTypeChip(alert.type)}
+                                        <Typography component="span" sx={{ fontWeight: 700, color: '#222', fontSize: 18, mr: 1 }}>
+                                            {alert.type ? (alert.type === 'fall' ? '넘어짐' : alert.type === 'reverse_driving' ? '역주행' : alert.type) : ''}
+                                        </Typography>
+                                        {alert.prob !== undefined && (
+                                            <Chip label={`확률: ${getProbPercent(alert.prob)}`} color="info" size="small" sx={{ fontWeight: 700, fontSize: 14, ml: 1 }} />
+                                        )}
+                                    </Box>
+                                }
                                 secondary={format(new Date(alert.timestamp), 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
                             />
                         </ListItem>

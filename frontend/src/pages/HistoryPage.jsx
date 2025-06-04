@@ -109,22 +109,10 @@ function HistoryPage() {
 
     // 이벤트 타입에 따른 칩 색상
     const getEventTypeChip = (type) => {
-        const typeConfig = {
-            'FALL': { label: '넘어짐', color: 'error' },
-            'REVERSE': { label: '역주행', color: 'warning' },
-            'fall': { label: '넘어짐', color: 'error' },
-            'reverse_driving': { label: '역주행', color: 'warning' },
-            'thief': { label: '침입', color: 'secondary' }
-        };
-        const config = typeConfig[type] || { label: type, color: 'primary' };
-        return (
-            <Chip 
-                label={config.label} 
-                color={config.color} 
-                size="small" 
-                sx={{ fontWeight: 600, fontSize: 12 }} 
-            />
-        );
+        const t = (type || '').toLowerCase();
+        if (t === 'fall' || t === '넘어짐' || t === 'FALL') return <Chip label="넘어짐" color="error" size="small" sx={{ fontWeight: 600, fontSize: 14, mr: 1 }} />;
+        if (t === 'reverse_driving' || t === '역주행') return <Chip label="역주행" color="warning" size="small" sx={{ fontWeight: 600, fontSize: 14, mr: 1 }} />;
+        return <Chip label={type} color="primary" size="small" sx={{ fontWeight: 600, fontSize: 14, mr: 1 }} />;
     };
 
     // 현재 페이지에 보여줄 데이터
