@@ -4,8 +4,8 @@ import React from 'react';
 const VideoStream = ({ rtsp, name }) => {
   // rtsp 주소를 파이썬 서버로 쿼리로 전달
   const src = rtsp
-    ? `http://localhost:5000/video_feed?rtsp=${encodeURIComponent(rtsp)}`
-    : `http://localhost:5000/video_feed`;
+    ? `http://localhost:5050/video_feed?rtsp=${encodeURIComponent(rtsp)}`
+    : `http://localhost:5050/video_feed`;
   return (
     <div style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', boxShadow: '0 2px 16px 0 rgba(49,130,246,0.10)', border: '1.5px solid #e5e8eb', background: '#fff' }}>
       <div style={{

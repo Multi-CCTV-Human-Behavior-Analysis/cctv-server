@@ -34,7 +34,7 @@ function DashboardPage() {
         const checkStatus = async () => {
             // AI 서버(파이썬)
             try {
-                const res = await fetch('http://localhost:5000/health', { method: 'GET' });
+                const res = await fetch('http://localhost:5050/health', { method: 'GET' });
                 const data = await res.json();
                 setAiStatus(data.status === 'ok' ? 'ok' : 'fail');
             } catch {
@@ -117,7 +117,7 @@ function DashboardPage() {
                             <Box sx={{ mt: 2 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                     {aiStatus === 'ok' ? <CheckCircleIcon color="success" sx={{ mr: 1 }} /> : aiStatus === 'fail' ? <ErrorIcon color="error" sx={{ mr: 1 }} /> : <CircularProgress size={18} sx={{ mr: 1 }} />}
-                                    <Typography variant="body2">AI 서버(5000): {aiStatus === 'ok' ? '정상' : aiStatus === 'fail' ? '오류' : '확인 중'}</Typography>
+                                    <Typography variant="body2">AI 서버(5050): {aiStatus === 'ok' ? '정상' : aiStatus === 'fail' ? '오류' : '확인 중'}</Typography>
                                 </Box>
                             </Box>
                         </CardContent>
