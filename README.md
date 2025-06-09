@@ -1,5 +1,9 @@
 # CCTV 서버 프로젝트
 
+<img width="615" alt="image" src="https://github.com/user-attachments/assets/d48f0014-f6d1-45bd-b625-8b91173c7f5d" />
+
+
+
 ## 프로젝트 개요
 이 프로젝트는 실시간 웹캠 스트리밍과 낙상 감지 기능을 제공하는 CCTV 시스템입니다. 웹 기반 대시보드를 통해 실시간 모니터링과 알림 기능을 제공합니다.
 
