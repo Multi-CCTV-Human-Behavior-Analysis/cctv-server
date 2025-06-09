@@ -21,13 +21,9 @@ import traceback
 app = Flask(__name__)
 CORS(app)
 
-# RTSP URL 설정 (주석 처리)
-# RTSP_URL1 = "rtsp://admin:123456@172.30.1.1:554/stream1"
-# RTSP_URL2 = "rtsp://admin:123456@172.30.1.1:554/stream2"
-
 # 웹캠 설정
-WEBCAM_ID1 = 0  # 첫 번째 웹캠
-WEBCAM_ID2 = 1  # 두 번째 웹캠 (있는 경우)
+WEBCAM_ID1 = 1  # 첫 번째 웹캠 (실시간 스트리밍용)
+WEBCAM_ID2 = 0  # 두 번째 웹캠 (낙상 감지용)
 
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(static_image_mode=False, model_complexity=1)
@@ -55,14 +51,11 @@ CHANNELS = 3
 MAX_PERSON = 1
 
 def extract_keypoints(results, img_h, img_w):
-    """
-    MediaPipe 포즈 랜드마크를 OpenPose 형식의 키포인트로 변환
-    """
     keypoints = np.zeros((CHANNELS, NUM_JOINTS, MAX_PERSON))
     if results.pose_landmarks:
         lm = results.pose_landmarks.landmark
         for k, idx in enumerate(COCO_ORDERED_LANDMARKS):
-            if idx is None:  # 목 관절은 어깨의 중간점으로 계산
+            if idx is None:
                 l = lm[11]
                 r = lm[12]
                 x = (l.x + r.x) / 2
@@ -71,15 +64,12 @@ def extract_keypoints(results, img_h, img_w):
             else:
                 point = lm[idx]
                 x, y, conf = point.x, point.y, point.visibility
-            keypoints[0, k, 0] = x * img_w  # x 좌표
-            keypoints[1, k, 0] = y * img_h  # y 좌표
-            keypoints[2, k, 0] = conf       # 신뢰도
+            keypoints[0, k, 0] = x * img_w
+            keypoints[1, k, 0] = y * img_h
+            keypoints[2, k, 0] = conf
     return keypoints
 
 def predict_if_ready():
-    """
-    30프레임이 모이면 모델로 예측 수행
-    """
     if len(frame_buffer) == FRAME_LEN:
         np_data = np.stack(frame_buffer, axis=1)
         input_tensor = torch.tensor(np_data, dtype=torch.float32).unsqueeze(0).to(device)
@@ -87,7 +77,7 @@ def predict_if_ready():
             output = model(input_tensor)
             probs = F.softmax(output, dim=1).cpu().numpy()[0]
             pred = np.argmax(probs)
-        frame_buffer.pop(0)  # 가장 오래된 프레임 제거
+        frame_buffer.pop(0)
         return class_names[pred], probs
     return "Loading...", [0.0, 0.0]
 
@@ -97,13 +87,16 @@ def send_event_to_java(event_data):
     """
     url = "http://localhost:8081/api/history/event"
     try:
+        print(f"[cam_server] 이벤트 전송 시도: {event_data}")
         response = requests.post(url, json=event_data)
         if response.status_code == 200:
             print(f"[cam_server] 이벤트 전송 성공: {event_data}")
+            print(f"[cam_server] 응답 내용: {response.text}")
         else:
             print(f"[cam_server] 이벤트 전송 실패: status={response.status_code}, body={response.text}")
     except Exception as e:
-        print("[cam_server] 이벤트 전송 예외:", e)
+        print(f"[cam_server] 이벤트 전송 예외: {str(e)}")
+        print(f"[cam_server] 예외 상세: {traceback.format_exc()}")
 
 def update_recordings_json(new_filename):
     """
@@ -146,12 +139,12 @@ def camera_loop():
     - 낙상 감지
     - 이벤트 전송
     """
-    cap = cv2.VideoCapture(WEBCAM_ID2)  # 두 번째 웹캠 사용
+    cap = cv2.VideoCapture(WEBCAM_ID2)  # 낙상 감지용 카메라
     if not cap.isOpened():
-        print("[cam_server] 웹캠 열기 실패")
+        print("[cam_server] 낙상 감지용 웹캠 열기 실패")
         return
     
-    print("[cam_server] 웹캠 열기 성공")
+    print("[cam_server] 낙상 감지용 웹캠 열기 성공")
     
     # 영상 저장 관련 변수
     save_dir = "/Users/lee/Documents/cctv-server/frontend/public/recordings"
@@ -169,7 +162,7 @@ def camera_loop():
             success, frame = cap.read()
             if not success:
                 print("[cam_server] 프레임 읽기 실패")
-                time.sleep(1)  # 잠시 대기 후 재시도
+                time.sleep(1)
                 continue
                 
             # 1분 단위로 파일 저장
@@ -206,10 +199,10 @@ def camera_loop():
             frame_buffer.append(keypoints)
             label, probs = predict_if_ready()
             
-            # 낙상 감지 시 이벤트 전송 (1초에 한 번만)
+            # 낙상 감지 시 이벤트 전송 (5초에 한 번만)
             if label == 'Fall' and probs[1] > 0.8:
                 now_event = time.time()
-                if now_event - last_event_time > 1.0:
+                if now_event - last_event_time > 5.0:
                     event = {"type": "FALL", "prob": float(probs[1]), "timestamp": now_event}
                     send_event_to_java(event)
                     last_event_time = now_event
@@ -217,7 +210,7 @@ def camera_loop():
         except Exception as e:
             print(f"[cam_server] 예외 발생: {str(e)}")
             print(traceback.format_exc())
-            time.sleep(1)  # 예외 발생 시 잠시 대기
+            time.sleep(1)
             continue
     
     # 종료 시 정리
@@ -227,71 +220,71 @@ def camera_loop():
     cap.release()
     print("[cam_server] 카메라 루프 종료")
 
-def gen_frames(camera_id):
+def gen_frames(WEBCAM_ID):
     """
     웹 스트리밍을 위한 프레임 생성 함수
     - 포즈 추출
     - 낙상 감지
     - 시각화
     """
-    reconnect_delay = 1  # 재연결 시도 간격 (초)
-    max_retries = 3      # 최대 재시도 횟수
+    reconnect_delay = 1
+    max_retries = 3
     retry_count = 0
     cap = None
-    last_log_time = 0  # 마지막 로그 출력 시간
+    last_log_time = 0
     
-    while True:  # 무한 루프로 연결 유지
+    while True:
         try:
             if cap is None or not cap.isOpened():
-                print(f"[cam_server] 웹캠 연결 시도: {camera_id}")
-                cap = cv2.VideoCapture(camera_id)
+                print(f"[cam_server] 웹캠 연결 시도: {WEBCAM_ID}")
+                cap = cv2.VideoCapture(WEBCAM_ID)
                 
-    if not cap.isOpened():
+                if not cap.isOpened():
                     print(f"[cam_server] 웹캠 열기 실패 (시도 {retry_count + 1}/{max_retries})")
                     retry_count += 1
                     if retry_count >= max_retries:
                         print("[cam_server] 최대 재시도 횟수 초과. 잠시 대기 후 재시도")
-                        time.sleep(5)  # 5초 대기 후 다시 시도
+                        time.sleep(5)
                         retry_count = 0
                     else:
                         time.sleep(reconnect_delay)
                     continue
                 
-                print(f"[cam_server] 웹캠 열기 성공: {camera_id}")
-                retry_count = 0  # 성공하면 재시도 카운트 초기화
+                print(f"[cam_server] 웹캠 열기 성공: {WEBCAM_ID}")
+                retry_count = 0
             
-        success, frame = cap.read()
-        if not success:
-            print("[cam_server] 프레임 읽기 실패")
+            success, frame = cap.read()
+            if not success:
+                print("[cam_server] 프레임 읽기 실패")
                 cap.release()
                 cap = None
                 continue
-            
-        # 포즈 추출 및 낙상 감지
-        h, w, _ = frame.shape
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = pose.process(rgb)
+                
+            # 포즈 추출 및 낙상 감지
+            h, w, _ = frame.shape
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = pose.process(rgb)
             
             if results.pose_landmarks:
-        keypoints = extract_keypoints(results, h, w)
-        frame_buffer.append(keypoints)
-        label, probs = predict_if_ready()
-        
+                keypoints = extract_keypoints(results, h, w)
+                frame_buffer.append(keypoints)
+                label, probs = predict_if_ready()
+                
                 # 1초마다 로그 출력
                 current_time = time.time()
                 if current_time - last_log_time >= 1.0:
                     prob_text = f"{probs[1]:.2f}" if label == 'Fall' else f"{probs[0]:.2f}"
-                    print(f"[cam_server] 탐지 결과 - 상태: {label}, 확률: {prob_text}")
+                    print(f"[cam_server] - status: {label}, probability: {prob_text}")
                     last_log_time = current_time
                 
-        # 결과 시각화
-        color = (0, 255, 0) if label == 'Normal' else (0, 0, 255)
-            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+                # 결과 시각화
+                color = (0, 255, 0) if label == 'Normal' else (0, 0, 255)
+                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
                 
                 # 예측 결과와 확률 표시 (하단 중앙)
                 prob_text = f"{probs[1]:.2f}" if label == 'Fall' else f"{probs[0]:.2f}"
-                status_text = f'상태: {label}'
-                prob_text = f'확률: {prob_text}'
+                status_text = f'Status: {label}'
+                prob_text = f'Probability: {prob_text}'
                 
                 # 텍스트 크기 계산
                 font_scale = 2.0
@@ -305,8 +298,8 @@ def gen_frames(camera_id):
                 # 텍스트 위치 계산 (하단 중앙)
                 status_x = (w - status_width) // 2
                 prob_x = (w - prob_width) // 2
-                status_y = h - 100  # 하단에서 100픽셀 위
-                prob_y = h - 50     # 하단에서 50픽셀 위
+                status_y = h - 100
+                prob_y = h - 50
                 
                 # 텍스트 배경 (검은색 반투명)
                 overlay = frame.copy()
@@ -333,7 +326,7 @@ def gen_frames(camera_id):
                 
                 # 텍스트 위치 계산 (하단 중앙)
                 text_x = (w - text_width) // 2
-                text_y = h - 50  # 하단에서 50픽셀 위
+                text_y = h - 50
                 
                 # 텍스트 배경 (검은색 반투명)
                 overlay = frame.copy()
@@ -351,15 +344,64 @@ def gen_frames(camera_id):
                     print("[cam_server] 탐지 결과 - 포즈 감지 안됨")
                     last_log_time = current_time
             
-        _, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    
+            _, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            
         except Exception as e:
             print(f"[cam_server] 스트림 처리 중 예외 발생: {str(e)}")
             if cap is not None:
-    cap.release()
+                cap.release()
+                cap = None
+            time.sleep(reconnect_delay)
+
+def gen_simple_frames(WEBCAM_ID):
+    """
+    단순 스트리밍을 위한 프레임 생성 함수
+    - 낙상 감지 없이 순수 스트리밍만 수행
+    """
+    reconnect_delay = 1
+    max_retries = 3
+    retry_count = 0
+    cap = None
+    
+    while True:
+        try:
+            if cap is None or not cap.isOpened():
+                print(f"[cam_server] 단순 스트리밍 웹캠 연결 시도: {WEBCAM_ID}")
+                cap = cv2.VideoCapture(WEBCAM_ID)
+                
+                if not cap.isOpened():
+                    print(f"[cam_server] 단순 스트리밍 웹캠 열기 실패 (시도 {retry_count + 1}/{max_retries})")
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        print("[cam_server] 최대 재시도 횟수 초과. 잠시 대기 후 재시도")
+                        time.sleep(5)
+                        retry_count = 0
+                    else:
+                        time.sleep(reconnect_delay)
+                    continue
+                
+                print(f"[cam_server] 단순 스트리밍 웹캠 열기 성공: {WEBCAM_ID}")
+                retry_count = 0
+            
+            success, frame = cap.read()
+            if not success:
+                print("[cam_server] 단순 스트리밍 프레임 읽기 실패")
+                cap.release()
+                cap = None
+                continue
+            
+            _, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            
+        except Exception as e:
+            print(f"[cam_server] 단순 스트리밍 처리 중 예외 발생: {str(e)}")
+            if cap is not None:
+                cap.release()
                 cap = None
             time.sleep(reconnect_delay)
 
@@ -371,7 +413,8 @@ def health():
 @app.route('/video_feed')
 def video_feed():
     """일반 스트림 제공 엔드포인트 (웹캠1)"""
-    response = Response(gen_frames(WEBCAM_ID1), mimetype='multipart/x-mixed-replace; boundary=frame')
+    print("[cam_server] 일반 스트림 시작 (웹캠1)")
+    response = Response(gen_simple_frames(WEBCAM_ID1), mimetype='multipart/x-mixed-replace; boundary=frame')
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
@@ -380,6 +423,7 @@ def video_feed():
 @app.route('/video')
 def video():
     """낙상 감지 스트림 제공 엔드포인트 (웹캠2)"""
+    print("[cam_server] 낙상 감지 스트림 시작 (웹캠2)")
     response = Response(gen_frames(WEBCAM_ID2), mimetype='multipart/x-mixed-replace; boundary=frame')
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'

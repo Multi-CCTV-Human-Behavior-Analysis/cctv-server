@@ -46,15 +46,17 @@ const EventHistory = () => {
     }, []);
 
     // 필터링된 이벤트 목록
-    const filteredEvents = events.filter(event => {
-        const type = (event.eventType || '').toLowerCase();
-        const filterType = (filter.type || '').toLowerCase();
-        if (filterType !== 'all' && filterType !== '' && type !== filterType) return false;
-        if (filter.startDate && new Date(event.timestamp) < new Date(filter.startDate)) return false;
-        if (filter.endDate && new Date(event.timestamp) > new Date(filter.endDate)) return false;
-        if (filter.cameraId && event.cameraId !== filter.cameraId) return false;
-        return true;
-    });
+    const filteredEvents = events
+        .filter(event => {
+            const type = (event.eventType || '').toLowerCase();
+            const filterType = (filter.type || '').toLowerCase();
+            if (filterType !== 'all' && filterType !== '' && type !== filterType) return false;
+            if (filter.startDate && new Date(event.timestamp) < new Date(filter.startDate)) return false;
+            if (filter.endDate && new Date(event.timestamp) > new Date(filter.endDate)) return false;
+            if (filter.cameraId && event.cameraId !== filter.cameraId) return false;
+            return true;
+        })
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // timestamp 기준 내림차순 정렬
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
